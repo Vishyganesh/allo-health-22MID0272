@@ -42,7 +42,7 @@ npm run dev
 Create `.env` file:
 
 ```env
-DATABASE_URL="postgresql://neondb_owner:npg_bvR9XCrAu8ei@ep-fancy-art-ao8re180.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+DATABASE_URL="postgresql://neondb_owner:npg_p2bwIGnS4dkV@ep-billowing-scene-aorv14cd-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 ```
 
 ---

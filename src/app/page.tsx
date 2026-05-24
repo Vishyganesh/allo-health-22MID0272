@@ -1,72 +1,204 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Inventory = {
+  warehouseId: string;
+  warehouseName: string;
+  totalStock: number;
+  reservedStock: number;
+  availableStock: number;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  inventories: Inventory[];
+};
+
 export default function Home() {
-  async function createReservation() {
-    const response = await fetch("/api/reservations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        productId: "cmpk289yd0002947so7fmhuj8",
-        warehouseId: "cmpk289ux0000947s7arnbe22",
-        quantity: 5,
-      }),
-    });
 
-    const data = await response.json();
+  const [products, setProducts] =
+    useState<Product[]>([]);
 
-    console.log(data);
+  const [loading, setLoading] =
+    useState(true);
 
-    alert(JSON.stringify(data, null, 2));
+  const [error, setError] =
+    useState("");
+
+  const router = useRouter();
+
+  async function fetchProducts() {
+
+    try {
+
+      const response = await fetch(
+        "/api/products"
+      );
+
+      const data = await response.json();
+
+      setProducts(data);
+
+    } catch {
+
+      setError(
+        "Failed to load products"
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
   }
-  async function confirmReservation() {
-    const reservationId = "PASTE_RESERVATION_ID";
 
-    const response = await fetch(`/api/reservations/${reservationId}/confirm`, {
-      method: "POST",
-    });
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-    const data = await response.json();
+  async function reserveProduct(
+    productId: string,
+    warehouseId: string
+  ) {
 
-    console.log(data);
+    try {
 
-    alert(JSON.stringify(data, null, 2));
+      setError("");
+
+      const response = await fetch(
+        "/api/reservations",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            productId,
+            warehouseId,
+            quantity: 1,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+
+        setError(
+          data.error ||
+          "Reservation failed"
+        );
+
+        return;
+      }
+
+      router.push(
+        `/reservation/${data.id}`
+      );
+
+    } catch {
+
+      setError(
+        "Something went wrong"
+      );
+    }
   }
-  async function releaseReservation() {
-    const reservationId = "cmpk3c8tm0005943o52wu08dg";
 
-    const response = await fetch(`/api/reservations/${reservationId}/release`, {
-      method: "POST",
-    });
-
-    const data = await response.json();
-
-    console.log(data);
-
-    alert(JSON.stringify(data, null, 2));
+  if (loading) {
+    return (
+      <div className="p-10">
+        Loading...
+      </div>
+    );
   }
 
   return (
+
     <div className="p-10">
-      <button
-        onClick={createReservation}
-        className="bg-black text-white px-4 py-2 rounded"
-      >
-        Reserve Product
-      </button>
-      <button
-        onClick={confirmReservation}
-        className="bg-green-600 text-white px-4 py-2 rounded mt-4"
-      >
-        Confirm Reservation
-      </button>
-      <button
-        onClick={releaseReservation}
-        className="bg-red-600 text-white px-4 py-2 rounded mt-4 ml-4"
-      >
-        Release Reservation
-      </button>
+
+      <h1 className="text-3xl font-bold mb-8">
+        Products
+      </h1>
+
+      {error && (
+
+        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-6">
+
+        {products.map((product) => (
+
+          <div
+            key={product.id}
+            className="border p-6 rounded-lg"
+          >
+
+            <h2 className="text-2xl font-semibold mb-4">
+              {product.name}
+            </h2>
+
+            <div className="space-y-4">
+
+              {product.inventories.map(
+                (inventory) => (
+
+                <div
+                  key={
+                    inventory.warehouseId
+                  }
+
+                  className="border rounded p-4 flex justify-between items-center"
+                >
+
+                  <div>
+
+                    <p className="font-medium">
+                      {
+                        inventory.warehouseName
+                      }
+                    </p>
+
+                    <p>
+                      Available Stock:
+                      {" "}
+                      {
+                        inventory.availableStock
+                      }
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() =>
+                      reserveProduct(
+                        product.id,
+                        inventory.warehouseId
+                      )
+                    }
+
+                    disabled={
+                      inventory.availableStock <= 0
+                    }
+
+                    className="bg-black text-white px-4 py-2 rounded disabled:bg-gray-400"
+                  >
+
+                    Reserve
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

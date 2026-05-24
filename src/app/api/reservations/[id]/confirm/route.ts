@@ -3,10 +3,14 @@ import { NextResponse } from "next/server";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } },
+  context: {
+    params: Promise<{
+      id: string;
+    }>;
+  }
 ) {
   try {
-    const reservationId = "cmpk3d9wp0007943o506gmo8v";
+    const { id: reservationId } = await context.params;
 
     const result = await prisma.$transaction(async (tx) => {
       const reservation = await tx.reservation.findUnique({

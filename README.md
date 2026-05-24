@@ -42,7 +42,7 @@ npm run dev
 Create `.env` file:
 
 ```env
-DATABASE_URL="postgresql://neondb_owner:npg_p2bwIGnS4dkV@ep-billowing-scene-aorv14cd-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+DATABASE_URL="postgresql://neondb_owner:**************@ep-billowing-scene-aorv14cd-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 ```
 
 ---
@@ -53,3 +53,5 @@ Deployed using:
 
 - Vercel
 - Neon PostgreSQL
+
+Link: https://allo-health-22mid0272.vercel.app/

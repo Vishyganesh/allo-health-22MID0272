@@ -9,6 +9,8 @@ type Reservation = {
 
   status: string;
 
+  expiresAt: string;
+
   product: {
     name: string;
     imageUrl?: string;
@@ -52,8 +54,84 @@ export default function ReservationsPage() {
   }
 
   useEffect(() => {
+
     fetchReservations();
+
+    const interval =
+      setInterval(
+        fetchReservations,
+        1000
+      );
+
+    return () =>
+      clearInterval(interval);
+
   }, []);
+
+  async function confirmReservation(
+    id: string
+  ) {
+
+    try {
+
+      await fetch(
+        `/api/reservations/${id}/confirm`,
+        {
+          method: "POST",
+        }
+      );
+
+      fetchReservations();
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  }
+
+  async function releaseReservation(
+    id: string
+  ) {
+
+    try {
+
+      await fetch(
+        `/api/reservations/${id}/release`,
+        {
+          method: "POST",
+        }
+      );
+
+      fetchReservations();
+
+    } catch (error) {
+
+      console.error(error);
+    }
+  }
+
+  function getRemainingTime(
+    expiresAt: string
+  ) {
+
+    const diff =
+      new Date(expiresAt).getTime() -
+      Date.now();
+
+    if (diff <= 0) {
+      return "Expired";
+    }
+
+    const mins =
+      Math.floor(diff / 60000);
+
+    const secs =
+      Math.floor(
+        (diff % 60000) / 1000
+      );
+
+    return `${mins}m ${secs}s`;
+  }
 
   if (loading) {
 
@@ -160,7 +238,7 @@ export default function ReservationsPage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
                   <div className="bg-slate-50 rounded-2xl p-4">
 
@@ -185,7 +263,59 @@ export default function ReservationsPage() {
                       {reservation.id}
                     </p>
                   </div>
+
+                  <div className="bg-slate-50 rounded-2xl p-4">
+
+                    <p className="text-sm text-slate-500 mb-2">
+                      Expires In
+                    </p>
+
+                    <p className="text-1xl font-bold text-slate-900">
+
+                      {reservation.status ===
+                        "PENDING"
+
+                        ? getRemainingTime(
+                            reservation.expiresAt
+                          )
+
+                        : "Completed"}
+                    </p>
+                  </div>
                 </div>
+
+                {reservation.status ===
+                  "PENDING" && (
+
+                  <div className="flex gap-4">
+
+                    <button
+                      onClick={() =>
+                        confirmReservation(
+                          reservation.id
+                        )
+                      }
+
+                      className="bg-green-600 text-white px-6 py-3 rounded-2xl hover:bg-green-700 transition"
+                    >
+
+                      Confirm
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        releaseReservation(
+                          reservation.id
+                        )
+                      }
+
+                      className="bg-red-600 text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition"
+                    >
+
+                      Release
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

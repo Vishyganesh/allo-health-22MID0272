@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { cleanupExpiredReservations }
+from "@/lib/cleanupExpiredReservations";
 
 export async function GET() {
+  await cleanupExpiredReservations();
   const products = await prisma.product.findMany({
     include: {
       inventories: {
@@ -15,6 +18,7 @@ export async function GET() {
   const formatted = products.map((product) => ({
     id: product.id,
     name: product.name,
+    imageUrl: product.imageUrl,
     inventories: product.inventories.map((inventory) => ({
       warehouseId: inventory.warehouseId,
       warehouseName: inventory.warehouse.name,

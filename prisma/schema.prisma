@@ -16,7 +16,7 @@ enum ReservationStatus {
 model Product {
   id            String         @id @default(cuid())
   name          String
-
+  imageUrl    String?
   inventories   Inventory[]
   reservations  Reservation[]
 

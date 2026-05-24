@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Reservation = {
   id: string;
-  quantity: number;
   status: string;
+  quantity: number;
   expiresAt: string;
 
   product: {
     name: string;
+    imageUrl?: string;
   };
 
   warehouse: {
@@ -24,51 +25,28 @@ export default function ReservationPage() {
 
   const router = useRouter();
 
-  const reservationId =
-    params.id as string;
-
   const [reservation, setReservation] =
     useState<Reservation | null>(null);
 
   const [loading, setLoading] =
     useState(true);
 
-  const [error, setError] =
-    useState("");
-
-  const [timeLeft, setTimeLeft] =
-    useState("");
-
   async function fetchReservation() {
 
     try {
 
-      setError("");
-
       const response = await fetch(
-        `/api/reservations/${reservationId}`
+        `/api/reservations/${params.id}`
       );
 
       const data =
         await response.json();
 
-      if (!response.ok) {
-
-        setError(
-          data.error ||
-          "Failed to load reservation"
-        );
-
-        return;
-      }
-
       setReservation(data);
 
-    } catch {
+    } catch (error) {
 
-      setError(
-        "Something went wrong"
-      );
+      console.error(error);
 
     } finally {
 
@@ -77,93 +55,25 @@ export default function ReservationPage() {
   }
 
   useEffect(() => {
-
-    if (reservationId) {
-      fetchReservation();
-    }
-
-  }, [reservationId]);
-
-  useEffect(() => {
-
-    if (!reservation) return;
-
-    const interval = setInterval(() => {
-
-      const now = new Date();
-
-      const expiry =
-        new Date(
-          reservation.expiresAt
-        );
-
-      const difference =
-        expiry.getTime() -
-        now.getTime();
-
-      if (difference <= 0) {
-
-        setTimeLeft("Expired");
-
-        clearInterval(interval);
-
-        return;
-      }
-
-      const minutes =
-        Math.floor(
-          difference / 1000 / 60
-        );
-
-      const seconds =
-        Math.floor(
-          (difference / 1000) % 60
-        );
-
-      setTimeLeft(
-        `${minutes}m ${seconds}s`
-      );
-
-    }, 1000);
-
-    return () =>
-      clearInterval(interval);
-
-  }, [reservation]);
+    fetchReservation();
+  }, []);
 
   async function confirmReservation() {
 
     try {
 
-      setError("");
-
-      const response = await fetch(
-        `/api/reservations/${reservationId}/confirm`,
+      await fetch(
+        `/api/reservations/${params.id}/confirm`,
         {
           method: "POST",
         }
       );
 
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-
-        setError(
-          data.error ||
-          "Confirm failed"
-        );
-
-        return;
-      }
-
       fetchReservation();
 
-    } catch {
+    } catch (error) {
 
-      setError(
-        "Something went wrong"
-      );
+      console.error(error);
     }
   }
 
@@ -171,43 +81,27 @@ export default function ReservationPage() {
 
     try {
 
-      setError("");
-
-      const response = await fetch(
-        `/api/reservations/${reservationId}/release`,
+      await fetch(
+        `/api/reservations/${params.id}/release`,
         {
           method: "POST",
         }
       );
 
-      const data =
-        await response.json();
+      router.push("/");
 
-      if (!response.ok) {
+    } catch (error) {
 
-        setError(
-          data.error ||
-          "Release failed"
-        );
-
-        return;
-      }
-
-      fetchReservation();
-
-    } catch {
-
-      setError(
-        "Something went wrong"
-      );
+      console.error(error);
     }
   }
 
   if (loading) {
 
     return (
-      <div className="p-10">
-        Loading...
+
+      <div className="text-xl">
+        Loading reservation...
       </div>
     );
   }
@@ -215,7 +109,8 @@ export default function ReservationPage() {
   if (!reservation) {
 
     return (
-      <div className="p-10">
+
+      <div className="text-xl text-red-600">
         Reservation not found
       </div>
     );
@@ -223,102 +118,125 @@ export default function ReservationPage() {
 
   return (
 
-    <div className="p-10 max-w-2xl mx-auto">
+    <div className="max-w-3xl mx-auto">
 
-      <h1 className="text-3xl font-bold mb-6">
-        Reservation Details
-      </h1>
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
 
-      {error && (
+        <img
+          src={reservation.product.imageUrl}
 
-        <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+          alt={reservation.product.name}
 
-      <div className="border rounded-lg p-6 space-y-4">
+          className="w-full h-400px object-cover"
+        />
 
-        <div>
-          <span className="font-semibold">
-            Product:
-          </span>
-          {" "}
-          {reservation.product.name}
-        </div>
+        <div className="p-8">
 
-        <div>
-          <span className="font-semibold">
-            Warehouse:
-          </span>
-          {" "}
-          {reservation.warehouse.name}
-        </div>
+          <div className="flex items-center justify-between mb-8">
 
-        <div>
-          <span className="font-semibold">
-            Quantity:
-          </span>
-          {" "}
-          {reservation.quantity}
-        </div>
+            <div>
 
-        <div>
-          <span className="font-semibold">
-            Status:
-          </span>
-          {" "}
-          {reservation.status}
-        </div>
+              <h1 className="text-5xl font-bold text-slate-900 mb-3">
+                {reservation.product.name}
+              </h1>
 
-        <div>
-          <span className="font-semibold">
-            Expires In:
-          </span>
-          {" "}
-          {timeLeft}
-        </div>
+              <p className="text-slate-500 text-lg">
+                {
+                  reservation.warehouse.name
+                }
+              </p>
+            </div>
 
-        <div className="flex gap-4 pt-4">
+            <span
+              className={`
+                px-5 py-3 rounded-full text-sm font-semibold
 
-          <button
-            onClick={
-              confirmReservation
-            }
+                ${
+                  reservation.status ===
+                  "PENDING"
 
-            disabled={
-              reservation.status !==
-              "PENDING"
-            }
+                    ? "bg-yellow-100 text-yellow-700"
 
-            className="bg-green-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            Confirm
-          </button>
+                    : reservation.status ===
+                      "CONFIRMED"
 
-          <button
-            onClick={
-              releaseReservation
-            }
+                    ? "bg-green-100 text-green-700"
 
-            disabled={
-              reservation.status !==
-              "PENDING"
-            }
+                    : "bg-red-100 text-red-700"
+                }
+              `}
+            >
 
-            className="bg-red-600 text-white px-4 py-2 rounded disabled:bg-gray-400"
-          >
-            Cancel
-          </button>
+              {reservation.status}
+            </span>
+          </div>
 
-          <button
-            onClick={() =>
-              router.push("/")
-            }
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
 
-            className="border px-4 py-2 rounded"
-          >
-            Back
-          </button>
+            <div className="bg-slate-50 rounded-2xl p-5">
+
+              <p className="text-sm text-slate-500 mb-2">
+                Quantity
+              </p>
+
+              <p className="text-2xl font-bold text-slate-900">
+                {reservation.quantity}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-5">
+
+              <p className="text-sm text-slate-500 mb-2">
+                Reservation ID
+              </p>
+
+              <p className="text-sm font-bold text-slate-900 break-all">
+                {reservation.id}
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-5">
+
+              <p className="text-sm text-slate-500 mb-2">
+                Expires At
+              </p>
+
+              <p className="text-sm font-bold text-slate-900">
+                {new Date(
+                  reservation.expiresAt
+                ).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {reservation.status ===
+            "PENDING" && (
+
+            <div className="flex gap-4">
+
+              <button
+                onClick={
+                  confirmReservation
+                }
+
+                className="bg-green-600 text-white px-8 py-4 rounded-2xl hover:bg-green-700 transition font-semibold"
+              >
+
+                Confirm Purchase
+              </button>
+
+              <button
+                onClick={
+                  releaseReservation
+                }
+
+                className="bg-red-600 text-white px-8 py-4 rounded-2xl hover:bg-red-700 transition font-semibold"
+              >
+
+                Release Reservation
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

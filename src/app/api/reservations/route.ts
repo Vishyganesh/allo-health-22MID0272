@@ -1,99 +1,147 @@
 import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function GET() {
+
   try {
-    const body = await req.json();
 
-    const { productId, warehouseId, quantity } = body;
+    const reservations =
+      await prisma.reservation.findMany({
 
-    if (!productId || !warehouseId || !quantity) {
-      return NextResponse.json(
-        { error: "Missing fields" },
-        { status: 400 }
-      );
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      // Find inventory row
-      const inventoryRows =
-  await tx.$queryRaw<
-    {
-      id: string;
-      totalStock: number;
-      reservedStock: number;
-    }[]
-  >`
-
-  SELECT *
-  FROM "Inventory"
-  WHERE "productId" = ${productId}
-  AND "warehouseId" = ${warehouseId}
-  FOR UPDATE
-`;
-
-const inventory = inventoryRows[0];
-
-      if (!inventory) {
-        throw new Error("Inventory not found");
-      }
-
-      const availableStock =
-        inventory.totalStock - inventory.reservedStock;
-
-      // Not enough stock
-      if (availableStock < quantity) {
-        return {
-          error: "Not enough stock",
-          status: 409,
-        };
-      }
-
-      // Increase reserved stock
-      await tx.inventory.update({
-        where: {
-          id: inventory.id,
+        include: {
+          product: true,
+          warehouse: true,
         },
-        data: {
-          reservedStock: {
-            increment: quantity,
-          },
+
+        orderBy: {
+          createdAt: "desc",
         },
       });
 
-      // Create reservation
-      const reservation = await tx.reservation.create({
+    return NextResponse.json(
+      reservations
+    );
+
+  } catch (error) {
+
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        error:
+          "Failed to fetch reservations",
+      },
+
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+export async function POST(
+  request: Request
+) {
+
+  try {
+
+    const body =
+      await request.json();
+
+    const {
+      productId,
+      warehouseId,
+      quantity,
+    } = body;
+
+    const inventory =
+      await prisma.inventory.findFirst({
+        where: {
+          productId,
+          warehouseId,
+        },
+      });
+
+    if (!inventory) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Inventory not found",
+        },
+
+        {
+          status: 404,
+        }
+      );
+    }
+
+    const availableStock =
+      inventory.totalStock -
+      inventory.reservedStock;
+
+    if (
+      availableStock < quantity
+    ) {
+
+      return NextResponse.json(
+        {
+          error:
+            "Not enough stock",
+        },
+
+        {
+          status: 400,
+        }
+      );
+    }
+
+    await prisma.inventory.update({
+      where: {
+        id: inventory.id,
+      },
+
+      data: {
+        reservedStock: {
+          increment: quantity,
+        },
+      },
+    });
+
+    const reservation =
+      await prisma.reservation.create({
         data: {
           productId,
           warehouseId,
           quantity,
-          expiresAt: new Date(
-            Date.now() + 10 * 60 * 1000
-          ),
+
+          status: "PENDING",
+
+          expiresAt:
+            new Date(
+              Date.now() +
+              30 * 1000
+            ),
         },
       });
 
-      return {
-        reservation,
-        status: 200,
-      };
-    });
-
-    if ("error" in result) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.status }
-      );
-    }
-
-    return NextResponse.json(result.reservation);
+    return NextResponse.json(
+      reservation
+    );
 
   } catch (error) {
+
     console.error(error);
 
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      {
+        error:
+          "Failed to create reservation",
+      },
+
+      {
+        status: 500,
+      }
     );
   }
 }

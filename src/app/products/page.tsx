@@ -59,8 +59,7 @@ export default function ProductsPage() {
 
   async function reserve(
     productId: string,
-    warehouseId: string,
-    quantity: number
+    warehouseId: string
   ) {
 
     try {
@@ -78,7 +77,7 @@ export default function ProductsPage() {
           body: JSON.stringify({
             productId,
             warehouseId,
-            quantity,
+            quantity: 1,
           }),
         }
       );
@@ -101,7 +100,7 @@ export default function ProductsPage() {
     return (
 
       <div className="text-xl">
-        Loading...
+        Loading products...
       </div>
     );
   }
@@ -115,16 +114,23 @@ export default function ProductsPage() {
         <div>
 
           <h1 className="text-5xl font-bold text-slate-900 mb-3">
-            Live stock and holds
+            Products
           </h1>
 
           <p className="text-slate-500 text-lg">
-            Reserved items stay on hold until checkout is confirmed or timer expires.
+            Browse live inventory across all warehouses.
           </p>
         </div>
 
-        <div className="text-slate-500 text-lg">
-          {products.length} products
+        <div className="bg-white border border-slate-200 rounded-2xl px-5 py-3 shadow-sm">
+
+          <p className="text-sm text-slate-500">
+            Total products
+          </p>
+
+          <p className="text-2xl font-bold text-slate-900">
+            {products.length}
+          </p>
         </div>
       </div>
 
